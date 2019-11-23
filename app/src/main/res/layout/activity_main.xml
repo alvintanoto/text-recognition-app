@@ -6,28 +6,4 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <co.vieln.mlkitexperiment.camera.CameraSourcePreview
-        android:id="@+id/camera_source"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <co.vieln.mlkitexperiment.utils.GraphicOverlay
-            android:id="@+id/graphic_overlay"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-        </co.vieln.mlkitexperiment.utils.GraphicOverlay>
-    </co.vieln.mlkitexperiment.camera.CameraSourcePreview>
-
-    <Button
-        android:id="@+id/btn_capture"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Capture"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="48dp"
-        android:layout_alignParentBottom="true">
-
-    </Button>
-
 </RelativeLayout>
