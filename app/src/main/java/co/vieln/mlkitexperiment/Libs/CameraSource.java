@@ -38,8 +38,11 @@ public class CameraSource {
     public static final int CAMERA_FACING_FRONT = CameraInfo.CAMERA_FACING_FRONT;
 
     public static final int IMAGE_FORMAT = ImageFormat.NV21;
-    public static final int DEFAULT_REQUESTED_CAMERA_PREVIEW_WIDTH = 900;
-    public static final int DEFAULT_REQUESTED_CAMERA_PREVIEW_HEIGHT = 1220;
+    public static final int DEFAULT_REQUESTED_CAMERA_PREVIEW_WIDTH = 480;
+    public static final int DEFAULT_REQUESTED_CAMERA_PREVIEW_HEIGHT = 360;
+
+    private final int requestedPreviewWidth = 1280;
+    private final int requestedPreviewHeight = 960;
 
     private static final String TAG = "MIDemoApp:CameraSource";
 
@@ -260,21 +263,12 @@ public class CameraSource {
         }
         Camera camera = Camera.open(requestedCameraId);
 
-        SizePair sizePair = PreferenceUtils.getCameraPreviewSizePair(activity, requestedCameraId);
-        if (sizePair == null) {
-            sizePair =
-                    selectSizePair(
-                            camera,
-                            DEFAULT_REQUESTED_CAMERA_PREVIEW_WIDTH,
-                            DEFAULT_REQUESTED_CAMERA_PREVIEW_HEIGHT);
-        }
-
+        SizePair sizePair = selectSizePair(camera, requestedPreviewWidth, requestedPreviewHeight);
         if (sizePair == null) {
             throw new IOException("Could not find suitable preview size.");
         }
-
-        previewSize = sizePair.preview;
-        Log.v(TAG, "Camera preview size: " + previewSize);
+        Size pictureSize = sizePair.pictureSize();
+        previewSize = sizePair.previewSize();
 
         int[] previewFpsRange = selectPreviewFpsRange(camera, requestedFps);
         if (previewFpsRange == null) {
@@ -283,17 +277,14 @@ public class CameraSource {
 
         Camera.Parameters parameters = camera.getParameters();
 
-        Size pictureSize = sizePair.picture;
         if (pictureSize != null) {
-            Log.v(TAG, "Camera picture size: " + pictureSize);
             parameters.setPictureSize(pictureSize.getWidth(), pictureSize.getHeight());
         }
         parameters.setPreviewSize(previewSize.getWidth(), previewSize.getHeight());
         parameters.setPreviewFpsRange(
                 previewFpsRange[Camera.Parameters.PREVIEW_FPS_MIN_INDEX],
                 previewFpsRange[Camera.Parameters.PREVIEW_FPS_MAX_INDEX]);
-        // Use YV12 so that we can exercise YV12->NV21 auto-conversion logic for OCR detection
-        parameters.setPreviewFormat(IMAGE_FORMAT);
+        parameters.setPreviewFormat(ImageFormat.NV21);
 
         setRotation(camera, parameters, requestedCameraId);
 
@@ -359,7 +350,7 @@ public class CameraSource {
      * @param desiredHeight the desired height of the camera preview frames
      * @return the selected preview and picture size pair
      */
-    public static SizePair selectSizePair(Camera camera, int desiredWidth, int desiredHeight) {
+    private static SizePair selectSizePair(Camera camera, int desiredWidth, int desiredHeight) {
         List<SizePair> validPreviewSizes = generateValidPreviewSizeList(camera);
 
         // The method for selecting the best size is to minimize the sum of the differences between
@@ -369,7 +360,7 @@ public class CameraSource {
         SizePair selectedPair = null;
         int minDiff = Integer.MAX_VALUE;
         for (SizePair sizePair : validPreviewSizes) {
-            Size size = sizePair.preview;
+            Size size = sizePair.previewSize();
             int diff =
                     Math.abs(size.getWidth() - desiredWidth) + Math.abs(size.getHeight() - desiredHeight);
             if (diff < minDiff) {
@@ -387,20 +378,26 @@ public class CameraSource {
      * ratio as the preview size or the preview may end up being distorted. If the picture size is
      * null, then there is no picture size with the same aspect ratio as the preview size.
      */
-    public static class SizePair {
-        public final Size preview;
-        @Nullable public final Size picture;
+    private static class SizePair {
+        private final Size preview;
+        private Size picture;
 
         SizePair(
                 Camera.Size previewSize,
                 @Nullable Camera.Size pictureSize) {
             preview = new Size(previewSize.width, previewSize.height);
-            picture = pictureSize != null ? new Size(pictureSize.width, pictureSize.height) : null;
+            if (pictureSize != null) {
+                picture = new Size(pictureSize.width, pictureSize.height);
+            }
         }
 
-        public SizePair(Size previewSize, @Nullable Size pictureSize) {
-            preview = previewSize;
-            picture = pictureSize;
+        Size previewSize() {
+            return preview;
+        }
+
+        @Nullable
+        Size pictureSize() {
+            return picture;
         }
     }
 

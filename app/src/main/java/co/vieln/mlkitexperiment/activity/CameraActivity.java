@@ -74,13 +74,14 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
     }
 
     private void initData(){
+        btnCaputureText.setText("CAPTURE "+data);
+
         if(data.equals("TEXT")){
             textRecognitionProcessor = new TextRecognitionProcessor();
         } else if(data.equals("OBJECT")){
             FirebaseVisionObjectDetectorOptions options =
                     new FirebaseVisionObjectDetectorOptions.Builder()
                             .setDetectorMode(FirebaseVisionObjectDetectorOptions.STREAM_MODE)
-                            .enableClassification()  // Optional
                             .build();
 
             objectDetectorProcessor = new ObjectDetectorProcessor(options);

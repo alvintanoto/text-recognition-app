@@ -49,36 +49,7 @@ public abstract class VisionProcessorBase<T> implements VisionImageProcessor {
     public synchronized void process(
             ByteBuffer data, final FrameMetadata frameMetadata, final GraphicOverlay
             graphicOverlay) {
-        latestImage = data;
-        latestImageMetaData = frameMetadata;
-        if (processingImage == null && processingMetaData == null) {
-            processLatestImage(graphicOverlay);
-        }
-    }
-
-    // Bitmap version
-    @Override
-    public void process(Bitmap bitmap, final GraphicOverlay
-            graphicOverlay) {
-        detectInVisionImage(null /* bitmap */, FirebaseVisionImage.fromBitmap(bitmap), null,
-                graphicOverlay);
-    }
-
-    private synchronized void processLatestImage(final GraphicOverlay graphicOverlay) {
-        processingImage = latestImage;
-        processingMetaData = latestImageMetaData;
-        latestImage = null;
-        latestImageMetaData = null;
-        if (processingImage != null && processingMetaData != null) {
-            processImage(processingImage, processingMetaData, graphicOverlay);
-        }
-    }
-
-    private void processImage(
-            ByteBuffer data, final FrameMetadata frameMetadata,
-            final GraphicOverlay graphicOverlay) {
         if (shouldThrottle.get()) {
-            Log.d("ALVIN", "processImage: masuk");
             return;
         }
 
@@ -90,37 +61,29 @@ public abstract class VisionProcessorBase<T> implements VisionImageProcessor {
                         .setRotation(frameMetadata.getRotation())
                         .build();
 
-        Bitmap bitmap = BitmapUtils.getBitmap(data, frameMetadata);
-        detectInVisionImage(
-                bitmap, FirebaseVisionImage.fromByteBuffer(data, metadata), frameMetadata,
-                graphicOverlay);
-
-
+        detectInVisionImage(FirebaseVisionImage.fromByteBuffer(data, metadata), frameMetadata, graphicOverlay);
     }
 
     private void detectInVisionImage(
-            final Bitmap originalCameraImage,
-            FirebaseVisionImage image,
-            final FrameMetadata metadata,
-            final GraphicOverlay graphicOverlay) {
+            FirebaseVisionImage image, final FrameMetadata metadata, final GraphicOverlay graphicOverlay) {
+
         detectInImage(image)
                 .addOnSuccessListener(
                         new OnSuccessListener<T>() {
                             @Override
                             public void onSuccess(T results) {
-                                shouldThrottle.set(false);
-                                VisionProcessorBase.this.onSuccess(originalCameraImage, results,
+                                VisionProcessorBase.this.onSuccess(results,
                                         metadata,
                                         graphicOverlay);
-                                processLatestImage(graphicOverlay);
+                                shouldThrottle.set(false);
                             }
                         })
                 .addOnFailureListener(
                         new OnFailureListener() {
                             @Override
                             public void onFailure(@NonNull Exception e) {
-                                shouldThrottle.set(false);
                                 VisionProcessorBase.this.onFailure(e);
+                                shouldThrottle.set(false);
                             }
                         });
         shouldThrottle.set(true);
@@ -132,14 +95,7 @@ public abstract class VisionProcessorBase<T> implements VisionImageProcessor {
 
     protected abstract Task<T> detectInImage(FirebaseVisionImage image);
 
-    /**
-     * Callback that executes with a successful detection result.
-     *
-     * @param originalCameraImage hold the original image from camera, used to draw the background
-     *                            image.
-     */
     protected abstract void onSuccess(
-            @Nullable Bitmap originalCameraImage,
             @NonNull T results,
             @NonNull FrameMetadata frameMetadata,
             @NonNull GraphicOverlay graphicOverlay);

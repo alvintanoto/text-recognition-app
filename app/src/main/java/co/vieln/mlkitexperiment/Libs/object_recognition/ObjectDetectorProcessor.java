@@ -32,6 +32,11 @@ public class ObjectDetectorProcessor extends VisionProcessorBase<List<FirebaseVi
     }
 
     @Override
+    public void process(Bitmap bitmap, GraphicOverlay graphicOverlay) {
+
+    }
+
+    @Override
     public void stop() {
         super.stop();
         try {
@@ -48,16 +53,12 @@ public class ObjectDetectorProcessor extends VisionProcessorBase<List<FirebaseVi
 
     @Override
     protected void onSuccess(
-            @Nullable Bitmap originalCameraImage,
             @NonNull List<FirebaseVisionObject> results,
             @NonNull FrameMetadata frameMetadata,
             @NonNull GraphicOverlay graphicOverlay) {
         graphicOverlay.clear();
-        if (originalCameraImage != null) {
-            CameraImageGraphic imageGraphic = new CameraImageGraphic(graphicOverlay, originalCameraImage);
-            graphicOverlay.add(imageGraphic);
-        }
         for (FirebaseVisionObject object : results) {
+            Log.d("ALVIN", "onSuccess: "+results);
             ObjectGraphic objectGraphic = new ObjectGraphic(graphicOverlay, object);
             graphicOverlay.add(objectGraphic);
         }

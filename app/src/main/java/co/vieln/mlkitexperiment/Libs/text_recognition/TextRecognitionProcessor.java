@@ -18,7 +18,6 @@ import co.vieln.mlkitexperiment.Libs.CameraImageGraphic;
 import co.vieln.mlkitexperiment.Libs.FrameMetadata;
 import co.vieln.mlkitexperiment.Libs.GraphicOverlay;
 import co.vieln.mlkitexperiment.Libs.VisionProcessorBase;
-import co.vieln.mlkitexperiment.Libs.text_recognition.TextGraphic;
 
 /**
  * Processor for the text recognition demo.
@@ -32,6 +31,11 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
 
     public TextRecognitionProcessor() {
         detector = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
+    }
+
+    @Override
+    public void process(Bitmap bitmap, GraphicOverlay graphicOverlay) {
+
     }
 
     @Override
@@ -50,16 +54,11 @@ public class TextRecognitionProcessor extends VisionProcessorBase<FirebaseVision
 
     @Override
     protected void onSuccess(
-            @Nullable Bitmap originalCameraImage,
             @NonNull FirebaseVisionText results,
             @NonNull FrameMetadata frameMetadata,
             @NonNull GraphicOverlay graphicOverlay) {
         graphicOverlay.clear();
-        if (originalCameraImage != null) {
-            CameraImageGraphic imageGraphic = new CameraImageGraphic(graphicOverlay,
-                    originalCameraImage);
-            graphicOverlay.add(imageGraphic);
-        }
+
         blocks = results.getTextBlocks();
         for (int i = 0; i < blocks.size(); i++) {
             List<FirebaseVisionText.Line> lines = blocks.get(i).getLines();
