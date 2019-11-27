@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.firebase.ml.vision.objects.FirebaseVisionObjectDetectorOptions;
 import com.google.firebase.ml.vision.text.FirebaseVisionText;
 import com.google.gson.Gson;
@@ -24,6 +25,7 @@ import java.util.List;
 import co.vieln.mlkitexperiment.Libs.CameraSource;
 import co.vieln.mlkitexperiment.Libs.CameraSourcePreview;
 import co.vieln.mlkitexperiment.Libs.GraphicOverlay;
+import co.vieln.mlkitexperiment.Libs.face_recognition.FaceDetectorProcessor;
 import co.vieln.mlkitexperiment.Libs.object_recognition.ObjectDetectorProcessor;
 import co.vieln.mlkitexperiment.Libs.text_recognition.TextRecognitionProcessor;
 import co.vieln.mlkitexperiment.R;
@@ -43,6 +45,7 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
 
     private TextRecognitionProcessor textRecognitionProcessor;
     private ObjectDetectorProcessor objectDetectorProcessor;
+    private FaceDetectorProcessor faceDetectorProcessor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,9 +85,15 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
             FirebaseVisionObjectDetectorOptions options =
                     new FirebaseVisionObjectDetectorOptions.Builder()
                             .setDetectorMode(FirebaseVisionObjectDetectorOptions.STREAM_MODE)
+                            .enableClassification()  // Optional
                             .build();
 
+
             objectDetectorProcessor = new ObjectDetectorProcessor(options);
+        } else if(data.equals("FACE")){
+            //face recognition
+
+            faceDetectorProcessor = new FaceDetectorProcessor();
         }
     }
 
@@ -108,6 +117,8 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
             cameraSource.setMachineLearningFrameProcessor(textRecognitionProcessor);
         } else if(data.equals("OBJECT")){
             cameraSource.setMachineLearningFrameProcessor(objectDetectorProcessor);
+        } else if(data.equals("FACE")){
+            cameraSource.setMachineLearningFrameProcessor(faceDetectorProcessor);
         }
     }
 

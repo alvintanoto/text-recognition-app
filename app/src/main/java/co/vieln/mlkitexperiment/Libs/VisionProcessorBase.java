@@ -39,7 +39,6 @@ public abstract class VisionProcessorBase<T> implements VisionImageProcessor {
 
     @GuardedBy("this")
 
-    private FrameMetadata processingMetaData;
     private final AtomicBoolean shouldThrottle = new AtomicBoolean(false);
 
     public VisionProcessorBase() {

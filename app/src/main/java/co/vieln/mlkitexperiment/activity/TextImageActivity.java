@@ -8,10 +8,14 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.ml.vision.FirebaseVision;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
+import com.google.firebase.ml.vision.objects.FirebaseVisionObject;
+import com.google.firebase.ml.vision.objects.FirebaseVisionObjectDetector;
+import com.google.firebase.ml.vision.objects.FirebaseVisionObjectDetectorOptions;
 import com.google.firebase.ml.vision.text.FirebaseVisionText;
 import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
 import com.google.gson.Gson;
@@ -24,13 +28,22 @@ import co.vieln.mlkitexperiment.R;
 public class TextImageActivity extends AppCompatActivity {
 
     private static int IMAGE_CODE = 0;
+    private String intentData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_text_image);
 
+        getData();
         getImage();
+    }
+
+    private void getData(){
+        Intent intent = getIntent();
+        if(intent!=null){
+            intentData = intent.getStringExtra("data");
+        }
     }
 
     private void getImage(){
@@ -45,33 +58,63 @@ public class TextImageActivity extends AppCompatActivity {
 
         if (resultCode == RESULT_OK && requestCode == IMAGE_CODE) {
             if(data.getData()!=null){
-                FirebaseVisionImage image;
-                try {
-                    image = FirebaseVisionImage.fromFilePath(TextImageActivity.this, data.getData());
-                    FirebaseVisionTextRecognizer detector = FirebaseVision.getInstance()
-                            .getOnDeviceTextRecognizer();
-                    detector.processImage(image)
-                            .addOnSuccessListener(
-                                    new OnSuccessListener<FirebaseVisionText>() {
-                                        @Override
-                                        public void onSuccess(FirebaseVisionText results) {
-                                            Log.d("ALVIN", "onSuccess: "+results);
+                if(intentData.equals("TEXT")){
+                    FirebaseVisionImage image;
+                    try {
+                        image = FirebaseVisionImage.fromFilePath(TextImageActivity.this, data.getData());
+                        FirebaseVisionTextRecognizer detector = FirebaseVision.getInstance()
+                                .getOnDeviceTextRecognizer();
+                        detector.processImage(image)
+                                .addOnSuccessListener(
+                                        new OnSuccessListener<FirebaseVisionText>() {
+                                            @Override
+                                            public void onSuccess(FirebaseVisionText results) {
+                                                Log.d("ALVIN", "onSuccess: "+results);
 
-                                            List<FirebaseVisionText.TextBlock> blocks;
-                                            blocks = results.getTextBlocks();
+                                                List<FirebaseVisionText.TextBlock> blocks;
+                                                blocks = results.getTextBlocks();
 
-                                            openResultActivity(blocks);
-                                        }
-                                    })
-                            .addOnFailureListener(
-                                    new OnFailureListener() {
-                                        @Override
-                                        public void onFailure(@NonNull Exception e) {
-                                            Log.d("ALVIN", "onFailure: "+e.toString());
-                                        }
-                                    });
-                } catch (IOException e) {
-                    e.printStackTrace();
+                                                openResultActivity(blocks);
+                                            }
+                                        })
+                                .addOnFailureListener(
+                                        new OnFailureListener() {
+                                            @Override
+                                            public void onFailure(@NonNull Exception e) {
+                                                Log.d("ALVIN", "onFailure: "+e.toString());
+                                            }
+                                        });
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }else if(intentData.equals("OBJECT")){
+                    FirebaseVisionImage image;
+                    try {
+                        image = FirebaseVisionImage.fromFilePath(TextImageActivity.this, data.getData());
+                        FirebaseVisionObjectDetectorOptions options =
+                                new FirebaseVisionObjectDetectorOptions.Builder()
+                                        .setDetectorMode(FirebaseVisionObjectDetectorOptions.STREAM_MODE)
+                                        .build();
+
+                        FirebaseVisionObjectDetector detector = FirebaseVision.getInstance()
+                                .getOnDeviceObjectDetector(options);
+                        detector.processImage(image)
+                                .addOnSuccessListener(new OnSuccessListener<List<FirebaseVisionObject>>() {
+                                    @Override
+                                    public void onSuccess(List<FirebaseVisionObject> firebaseVisionObjects) {
+                                        Log.d("ALVIN", "onSuccess: "+firebaseVisionObjects);
+                                    }
+                                })
+                                .addOnFailureListener(
+                                        new OnFailureListener() {
+                                            @Override
+                                            public void onFailure(@NonNull Exception e) {
+                                                Log.d("ALVIN", "onFailure: "+e.toString());
+                                            }
+                                        });
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }

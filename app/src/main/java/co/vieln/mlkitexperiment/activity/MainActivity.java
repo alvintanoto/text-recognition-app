@@ -16,6 +16,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private Button btnTextRecognition;
     private Button btnObjectRecognition;
+    private Button btnFaceRecognition;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,11 +30,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void initView(){
         btnTextRecognition = findViewById(R.id.btn_text_recognition);
         btnObjectRecognition = findViewById(R.id.btn_object_recognition);
+        btnFaceRecognition = findViewById(R.id.btn_face_recognition);
     }
 
     private void initListener(){
         btnTextRecognition.setOnClickListener(this);
         btnObjectRecognition.setOnClickListener(this);
+        btnFaceRecognition.setOnClickListener(this);
     }
 
     @Override
@@ -43,6 +46,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             openMenuActivity(intentData);
         } else if(v == btnObjectRecognition){
             String intentData = "OBJECT";
+            openMenuActivity(intentData);
+        } else if(v == btnFaceRecognition){
+            String intentData = "FACE";
             openMenuActivity(intentData);
         }
     }

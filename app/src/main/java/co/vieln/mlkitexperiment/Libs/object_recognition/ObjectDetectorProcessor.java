@@ -1,9 +1,9 @@
 package co.vieln.mlkitexperiment.Libs.object_recognition;
 
 import android.graphics.Bitmap;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import android.util.Log;
+
+import androidx.annotation.NonNull;
 
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.ml.vision.FirebaseVision;
@@ -15,12 +15,13 @@ import com.google.firebase.ml.vision.objects.FirebaseVisionObjectDetectorOptions
 import java.io.IOException;
 import java.util.List;
 
-import co.vieln.mlkitexperiment.Libs.CameraImageGraphic;
 import co.vieln.mlkitexperiment.Libs.FrameMetadata;
 import co.vieln.mlkitexperiment.Libs.GraphicOverlay;
 import co.vieln.mlkitexperiment.Libs.VisionProcessorBase;
 
-/** A processor to run object detector. */
+/**
+ * A processor to run object detector.
+ */
 public class ObjectDetectorProcessor extends VisionProcessorBase<List<FirebaseVisionObject>> {
 
     private static final String TAG = "ObjectDetectorProcessor";
@@ -57,8 +58,8 @@ public class ObjectDetectorProcessor extends VisionProcessorBase<List<FirebaseVi
             @NonNull FrameMetadata frameMetadata,
             @NonNull GraphicOverlay graphicOverlay) {
         graphicOverlay.clear();
+
         for (FirebaseVisionObject object : results) {
-            Log.d("ALVIN", "onSuccess: "+results);
             ObjectGraphic objectGraphic = new ObjectGraphic(graphicOverlay, object);
             graphicOverlay.add(objectGraphic);
         }
