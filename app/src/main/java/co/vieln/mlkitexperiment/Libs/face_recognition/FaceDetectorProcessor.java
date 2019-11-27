@@ -29,6 +29,9 @@ public class FaceDetectorProcessor extends VisionProcessorBase<List<FirebaseVisi
     private static final String TAG = "FaceDetectionProcessor";
 
     private final FirebaseVisionFaceDetector detector;
+    List<FirebaseVisionFace> faces;
+
+    FirebaseVisionImage firebaseVisionImage;
 
     public FaceDetectorProcessor() {
         FirebaseVisionFaceDetectorOptions options =
@@ -57,14 +60,16 @@ public class FaceDetectorProcessor extends VisionProcessorBase<List<FirebaseVisi
 
     @Override
     protected Task<List<FirebaseVisionFace>> detectInImage(FirebaseVisionImage image) {
+        firebaseVisionImage = image;
         return detector.detectInImage(image);
     }
 
     @Override
     protected void onSuccess(@NonNull List<FirebaseVisionFace> results, @NonNull FrameMetadata frameMetadata, @NonNull GraphicOverlay graphicOverlay) {
         graphicOverlay.clear();
-        for (int i = 0; i < results.size(); ++i) {
-            FirebaseVisionFace face = results.get(i);
+        faces = results;
+        for (int i = 0; i < faces.size(); ++i) {
+            FirebaseVisionFace face = faces.get(i);
 
             int cameraFacing =
                     frameMetadata != null ? frameMetadata.getCameraFacing() :
@@ -81,4 +86,13 @@ public class FaceDetectorProcessor extends VisionProcessorBase<List<FirebaseVisi
     protected void onFailure(@NonNull Exception e) {
         Log.e(TAG, "Face detection failed " + e);
     }
+
+    public List<FirebaseVisionFace> getFaces(){
+        return faces;
+    }
+
+    public FirebaseVisionImage getFirebaseVisionImage(){
+        return firebaseVisionImage;
+    }
+
 }

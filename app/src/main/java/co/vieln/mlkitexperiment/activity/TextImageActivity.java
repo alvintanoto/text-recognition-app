@@ -12,6 +12,9 @@ import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.ml.vision.FirebaseVision;
+import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcode;
+import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcodeDetector;
+import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcodeDetectorOptions;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 import com.google.firebase.ml.vision.objects.FirebaseVisionObject;
 import com.google.firebase.ml.vision.objects.FirebaseVisionObjectDetector;
@@ -23,6 +26,7 @@ import com.google.gson.Gson;
 import java.io.IOException;
 import java.util.List;
 
+import co.vieln.mlkitexperiment.Libs.barcode_recognition.BarcodeScanningProcessor;
 import co.vieln.mlkitexperiment.R;
 
 public class TextImageActivity extends AppCompatActivity {
@@ -115,6 +119,33 @@ public class TextImageActivity extends AppCompatActivity {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+                } else if(intentData.equals("FACE")){
+
+                } else if(intentData.equals("BARCODE")){
+                    FirebaseVisionImage image;
+                    try {
+                        image = FirebaseVisionImage.fromFilePath(TextImageActivity.this, data.getData());
+
+                        FirebaseVisionBarcodeDetector detector = FirebaseVision.getInstance()
+                                .getVisionBarcodeDetector();
+                        detector.detectInImage(image)
+                                .addOnSuccessListener(new OnSuccessListener<List<FirebaseVisionBarcode>>() {
+                                    @Override
+                                    public void onSuccess(List<FirebaseVisionBarcode> firebaseVisionBarcodes) {
+                                        Log.d("ALVIN", "onSuccess: "+firebaseVisionBarcodes);
+                                        openBarcodeResultActivity(firebaseVisionBarcodes);
+                                    }
+                                })
+                                .addOnFailureListener(
+                                        new OnFailureListener() {
+                                            @Override
+                                            public void onFailure(@NonNull Exception e) {
+                                                Log.d("ALVIN", "onFailure: "+e.toString());
+                                            }
+                                        });
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
@@ -123,11 +154,25 @@ public class TextImageActivity extends AppCompatActivity {
     private void openResultActivity(List<FirebaseVisionText.TextBlock> blocks){
         Gson gson = new Gson();
         Intent intent = new Intent(TextImageActivity.this, TextResultActivity.class);
+        intent.putExtra("data", intentData);
         intent.putExtra("BLOCK_SIZE", blocks.size());
 
         for (int i = 0; i < blocks.size(); i++) {
             String json = gson.toJson(blocks.get(i));
             intent.putExtra("BLOCK_KE_" + i, json);
+        }
+
+        finish();
+        startActivity(intent);
+    }
+
+    private void openBarcodeResultActivity(List<FirebaseVisionBarcode> barcodes){
+        Intent intent = new Intent(TextImageActivity.this, TextResultActivity.class);
+        intent.putExtra("data", intentData);
+        intent.putExtra("BLOCK_SIZE", barcodes.size());
+
+        for (int i = 0; i < barcodes.size(); i++) {
+            intent.putExtra("DISPLAY_VALUE_" + i, barcodes.get(i).getDisplayValue());
         }
 
         finish();

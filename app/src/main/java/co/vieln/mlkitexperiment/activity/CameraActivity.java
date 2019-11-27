@@ -3,6 +3,11 @@ package co.vieln.mlkitexperiment.activity;
 
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Matrix;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -15,16 +20,22 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcode;
+import com.google.firebase.ml.vision.common.FirebaseVisionImage;
+import com.google.firebase.ml.vision.face.FirebaseVisionFace;
 import com.google.firebase.ml.vision.objects.FirebaseVisionObjectDetectorOptions;
 import com.google.firebase.ml.vision.text.FirebaseVisionText;
 import com.google.gson.Gson;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
 
 import co.vieln.mlkitexperiment.Libs.CameraSource;
 import co.vieln.mlkitexperiment.Libs.CameraSourcePreview;
 import co.vieln.mlkitexperiment.Libs.GraphicOverlay;
+import co.vieln.mlkitexperiment.Libs.barcode_recognition.BarcodeScanningProcessor;
 import co.vieln.mlkitexperiment.Libs.face_recognition.FaceDetectorProcessor;
 import co.vieln.mlkitexperiment.Libs.object_recognition.ObjectDetectorProcessor;
 import co.vieln.mlkitexperiment.Libs.text_recognition.TextRecognitionProcessor;
@@ -46,6 +57,7 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
     private TextRecognitionProcessor textRecognitionProcessor;
     private ObjectDetectorProcessor objectDetectorProcessor;
     private FaceDetectorProcessor faceDetectorProcessor;
+    private BarcodeScanningProcessor barcodeScanningProcessor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,8 +104,9 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
             objectDetectorProcessor = new ObjectDetectorProcessor(options);
         } else if(data.equals("FACE")){
             //face recognition
-
             faceDetectorProcessor = new FaceDetectorProcessor();
+        } else if(data.equals("BARCODE")){
+            barcodeScanningProcessor = new BarcodeScanningProcessor();
         }
     }
 
@@ -119,6 +132,8 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
             cameraSource.setMachineLearningFrameProcessor(objectDetectorProcessor);
         } else if(data.equals("FACE")){
             cameraSource.setMachineLearningFrameProcessor(faceDetectorProcessor);
+        } else if(data.equals("BARCODE")){
+            cameraSource.setMachineLearningFrameProcessor(barcodeScanningProcessor);
         }
     }
 
@@ -198,6 +213,7 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
 
             Gson gson = new Gson();
             Intent intent = new Intent(CameraActivity.this, TextResultActivity.class);
+            intent.putExtra("data", data);
             intent.putExtra("BLOCK_SIZE", blocks.size());
 
             for (int i = 0; i < blocks.size(); i++) {
@@ -206,6 +222,83 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
             }
 
             startActivity(intent);
+        } else if(data.equals("OBJECT")){
+            // ??? err
+
+        } else if(data.equals("FACE")) {
+            List<FirebaseVisionFace> faces = faceDetectorProcessor.getFaces();
+
+
+            Log.d(TAG, "openTextResultActivity: "+ getApplicationContext().getFilesDir().getPath());
+            File imageTemp = new File(getApplicationContext().getFilesDir().getPath()+File.separator+"img");
+            if(!imageTemp.exists()){
+                imageTemp.mkdir();
+            }
+
+            FirebaseVisionImage image = faceDetectorProcessor.getFirebaseVisionImage();
+            Bitmap bitmap = image.getBitmap();
+
+            View resultView = cameraView;
+            resultView.setDrawingCacheEnabled(true);
+
+            Bitmap overlayBitmap = Bitmap.createBitmap(resultView.getDrawingCache());
+
+
+            Bitmap bitmap2Rescale = getResizedBitmap(overlayBitmap, bitmap.getWidth(), bitmap.getHeight());
+
+            Bitmap result = overlay(bitmap, bitmap2Rescale);
+
+            String filePath = System.currentTimeMillis()+".PNG";
+            File file = new File(imageTemp + File.separator + filePath);
+            try (FileOutputStream out = new FileOutputStream(file)) {
+                result.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            Intent intent = new Intent(CameraActivity.this, TextResultActivity.class);
+            intent.putExtra("img_path", file.getPath());
+            intent.putExtra("data", data);
+
+            resultView.destroyDrawingCache();
+            startActivity(intent);
+        } else if(data.equals("BARCODE")){
+            List<FirebaseVisionBarcode> barcodes = barcodeScanningProcessor.getBarcodes();
+
+            Intent intent = new Intent(CameraActivity.this, TextResultActivity.class);
+            intent.putExtra("data", data);
+            intent.putExtra("BLOCK_SIZE", barcodes.size());
+
+            for(int i=0; i<barcodes.size();i++){
+                intent.putExtra("DISPLAY_VALUE_"+i, barcodes.get(i).getDisplayValue());
+            }
+
+            startActivity(intent);
         }
+    }
+
+    private Bitmap overlay(Bitmap bmp1, Bitmap bmp2) {
+        Bitmap bmOverlay = Bitmap.createBitmap(bmp1.getWidth(), bmp1.getHeight(), bmp1.getConfig());
+        Canvas canvas = new Canvas(bmOverlay);
+        canvas.drawBitmap(bmp1, new Matrix(), null);
+        canvas.drawBitmap(bmp2, new Matrix(), null);
+        return bmOverlay;
+    }
+
+    public Bitmap getResizedBitmap(Bitmap bm, int newWidth, int newHeight) {
+        int width = bm.getWidth();
+        int height = bm.getHeight();
+        float scaleWidth = ((float) newWidth) / width;
+        float scaleHeight = ((float) newHeight) / height;
+        // CREATE A MATRIX FOR THE MANIPULATION
+        Matrix matrix = new Matrix();
+        // RESIZE THE BIT MAP
+        matrix.postScale(scaleWidth, scaleHeight);
+
+        // "RECREATE" THE NEW BITMAP
+        Bitmap resizedBitmap = Bitmap.createBitmap(
+                bm, 0, 0, width, height, matrix, false);
+        bm.recycle();
+        return resizedBitmap;
     }
 }
